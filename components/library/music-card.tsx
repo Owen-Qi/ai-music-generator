@@ -1,0 +1,317 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  FileText,
+  Music,
+  Play,
+  Pause,
+  Edit,
+  Download,
+  Share2,
+  Trash2,
+  MoreVertical,
+  FileMusic,
+  Headphones,
+} from "lucide-react"
+import { formatDate } from "@/lib/utils"
+import type { MusicItem } from "@/lib/data"
+
+interface MusicCardProps {
+  music: MusicItem & {
+    description?: string
+    hasSheet?: boolean
+    lyrics?: string
+    instruments?: {
+      vocal?: string
+      guitar?: string
+      piano?: string
+      bass?: string
+      drums?: string
+    }
+    sheetUrl?: string
+  }
+}
+
+export default function MusicCard({ music }: MusicCardProps) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
+
+  useEffect(() => {
+    if (!isDialogOpen) {
+      // 当对话框关闭时，设置一个短暂的延迟来重置 isClosing 状态
+      const timer = setTimeout(() => {
+        setIsClosing(false)
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [isDialogOpen])
+
+  const togglePlay = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsPlaying(!isPlaying)
+  }
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('[role="dialog"]')) {
+      return
+    }
+    if (isClosing) {
+      return
+    }
+    setIsDialogOpen(true)
+  }
+
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setIsClosing(true)
+    }
+    setIsDialogOpen(open)
+  }
+
+  return (
+    <Card 
+      className="overflow-hidden transition-all hover:shadow-md cursor-pointer" 
+      onClick={handleCardClick}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="h-12 w-12 flex-shrink-0 bg-purple-100 rounded-md flex items-center justify-center">
+            <Music className="h-6 w-6 text-purple-600" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-lg truncate">{music.title}</h3>
+              {music.hasSheet && <FileMusic className="h-4 w-4 text-purple-600" title="包含曲谱" />}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <span>{formatDate(music.createdAt)}</span>
+              <span>•</span>
+              <span>{music.duration}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-3 text-sm text-gray-600 line-clamp-2">
+          {music.description || "这首音乐没有描述。点击查看详细信息，包括歌词和乐器分轨。"}
+        </div>
+
+        <div className="flex items-center gap-2 mt-3">
+          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">{music.style}</Badge>
+          {music.isPublic && (
+            <Badge variant="outline" className="text-xs">
+              公开
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+
+      <CardFooter className="p-3 pt-0 flex justify-between">
+        <Button variant="outline" size="sm" className="text-xs" onClick={togglePlay}>
+          {isPlaying ? <Pause className="h-3 w-3 mr-1" /> : <Play className="h-3 w-3 mr-1" />}
+          {isPlaying ? "暂停" : "播放"}
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>操作</DropdownMenuLabel>
+            <DropdownMenuItem>
+              <Edit className="h-4 w-4 mr-2" />
+              编辑
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Download className="h-4 w-4 mr-2" />
+              下载
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Share2 className="h-4 w-4 mr-2" />
+              分享
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
+              <Trash2 className="h-4 w-4 mr-2" />
+              删除
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardFooter>
+      {/* 详细信息弹窗 */}
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {music.title}
+              {music.hasSheet && <FileMusic className="h-4 w-4 text-purple-600" title="包含曲谱" />}
+            </DialogTitle>
+            <DialogDescription>
+              创建于 {formatDate(music.createdAt)} • {music.duration} • {music.style}
+            </DialogDescription>
+          </DialogHeader>
+
+          <Tabs defaultValue="info" className="w-full">
+            <TabsList className="grid grid-cols-3">
+              <TabsTrigger value="info">基本信息</TabsTrigger>
+              <TabsTrigger value="tracks">音轨分离</TabsTrigger>
+              <TabsTrigger value="sheet">曲谱</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="info" className="space-y-4">
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">音乐描述</h4>
+                <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                  {music.description || "这首音乐没有描述。"}
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">歌词</h4>
+                <div className="bg-gray-50 p-3 rounded-md max-h-60 overflow-y-auto">
+                  {music.lyrics ? (
+                    <pre className="text-sm whitespace-pre-wrap">{music.lyrics}</pre>
+                  ) : (
+                    <p className="text-sm text-gray-500">这首音乐没有歌词。</p>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="tracks">
+              <div className="space-y-3 mt-4">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <Headphones className="h-4 w-4 text-purple-600" />
+                    <span className="font-medium">人声</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline">
+                      <Play className="h-3 w-3 mr-1" />
+                      播放
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Download className="h-3 w-3 mr-1" />
+                      下载
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <Music className="h-4 w-4 text-purple-600" />
+                    <span className="font-medium">钢琴</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline">
+                      <Play className="h-3 w-3 mr-1" />
+                      播放
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Download className="h-3 w-3 mr-1" />
+                      下载
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <Music className="h-4 w-4 text-purple-600" />
+                    <span className="font-medium">吉他</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline">
+                      <Play className="h-3 w-3 mr-1" />
+                      播放
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Download className="h-3 w-3 mr-1" />
+                      下载
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <Music className="h-4 w-4 text-purple-600" />
+                    <span className="font-medium">贝斯</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline">
+                      <Play className="h-3 w-3 mr-1" />
+                      播放
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Download className="h-3 w-3 mr-1" />
+                      下载
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <Music className="h-4 w-4 text-purple-600" />
+                    <span className="font-medium">鼓组</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline">
+                      <Play className="h-3 w-3 mr-1" />
+                      播放
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Download className="h-3 w-3 mr-1" />
+                      下载
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="sheet">
+              <div className="mt-4 space-y-4">
+                {music.hasSheet ? (
+                  <>
+                    <div className="border rounded-md p-4 flex items-center justify-center bg-gray-50 h-60">
+                      <FileText className="h-16 w-16 text-gray-400" />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline">
+                        <FileText className="h-4 w-4 mr-2" />
+                        在线查看
+                      </Button>
+                      <Button className="bg-purple-600 hover:bg-purple-700">
+                        <Download className="h-4 w-4 mr-2" />
+                        下载曲谱
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-60 bg-gray-50 rounded-md">
+                    <FileMusic className="h-16 w-16 text-gray-300 mb-2" />
+                    <p className="text-gray-500">这首音乐暂无曲谱</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  )
+}
