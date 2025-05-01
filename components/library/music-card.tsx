@@ -28,22 +28,11 @@ import {
   Headphones,
 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
-import type { MusicItem } from "@/lib/data"
+import type { MusicItem } from "@/lib/api"
+
 
 interface MusicCardProps {
-  music: MusicItem & {
-    description?: string
-    hasSheet?: boolean
-    lyrics?: string
-    instruments?: {
-      vocal?: string
-      guitar?: string
-      piano?: string
-      bass?: string
-      drums?: string
-    }
-    sheetUrl?: string
-  }
+  music: MusicItem
 }
 
 export default function MusicCard({ music }: MusicCardProps) {
@@ -96,10 +85,10 @@ export default function MusicCard({ music }: MusicCardProps) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-lg truncate">{music.title}</h3>
-              {music.hasSheet && <FileMusic className="h-4 w-4 text-purple-600" title="包含曲谱" />}
+              {music.has_sheet && <FileMusic className="h-4 w-4 text-purple-600" title="包含曲谱" />}
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{formatDate(music.createdAt)}</span>
+              <span>{formatDate(music.created_at)}</span>
               <span>•</span>
               <span>{music.duration}</span>
             </div>
@@ -111,8 +100,8 @@ export default function MusicCard({ music }: MusicCardProps) {
         </div>
 
         <div className="flex items-center gap-2 mt-3">
-          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">{music.style}</Badge>
-          {music.isPublic && (
+          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">{music.tags}</Badge>
+          {music.is_public && (
             <Badge variant="outline" className="text-xs">
               公开
             </Badge>
@@ -160,10 +149,10 @@ export default function MusicCard({ music }: MusicCardProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {music.title}
-              {music.hasSheet && <FileMusic className="h-4 w-4 text-purple-600" title="包含曲谱" />}
+              {music.has_sheet && <FileMusic className="h-4 w-4 text-purple-600" title="包含曲谱" />}
             </DialogTitle>
             <DialogDescription>
-              创建于 {formatDate(music.createdAt)} • {music.duration} • {music.style}
+              创建于 {formatDate(music.created_at)} • {music.duration} • {music.tags}
             </DialogDescription>
           </DialogHeader>
 
@@ -185,8 +174,8 @@ export default function MusicCard({ music }: MusicCardProps) {
               <div>
                 <h4 className="text-sm font-medium mb-2">歌词</h4>
                 <div className="bg-gray-50 p-3 rounded-md max-h-60 overflow-y-auto">
-                  {music.lyrics ? (
-                    <pre className="text-sm whitespace-pre-wrap">{music.lyrics}</pre>
+                  {music.prompt ? (
+                    <pre className="text-sm whitespace-pre-wrap">{music.prompt}</pre>
                   ) : (
                     <p className="text-sm text-gray-500">这首音乐没有歌词。</p>
                   )}
@@ -285,7 +274,7 @@ export default function MusicCard({ music }: MusicCardProps) {
 
             <TabsContent value="sheet">
               <div className="mt-4 space-y-4">
-                {music.hasSheet ? (
+                {music.has_sheet ? (
                   <>
                     <div className="border rounded-md p-4 flex items-center justify-center bg-gray-50 h-60">
                       <FileText className="h-16 w-16 text-gray-400" />

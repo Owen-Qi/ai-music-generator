@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import DashboardHeader from "@/components/layout/dashboard-header"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge"
 import MusicCard from "@/components/library/music-card"
 import MusicListItem from "@/components/library/music-list-item"
 import { ArrowUpDown, Grid, List, Plus, Search, SlidersHorizontal, Music, ArrowLeft } from "lucide-react"
-import { exampleMusicLibrary } from "@/lib/data"
+import { getMusicList } from "@/lib/api"
+import type { MusicItem } from "@/lib/api"
 
 export default function LibraryPage() {
   const router = useRouter()
@@ -20,25 +21,52 @@ export default function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "title">("newest")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [musicList, setMusicList] = useState<MusicItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // 获取音乐列表
+  const fetchMusicList = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const response = await getMusicList()
+      console.log(response)
+      if (response.results) {
+        setMusicList(response.results)
+      } else {
+        setError("获取音乐列表失败")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "获取音乐列表失败")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 初始加载
+  useEffect(() => {
+    fetchMusicList()
+  }, [])
 
   // 获取所有音乐风格类别
-  const allCategories = ["all", ...Array.from(new Set(exampleMusicLibrary.map((item) => item.style)))]
+  const allCategories = ["all", ...Array.from(new Set(musicList.map((item) => item.tags.split(",")[0])))]
 
   // 过滤和排序音乐列表
-  const filteredMusic = exampleMusicLibrary
+  const filteredMusic = musicList
     .filter((music) => {
       // 搜索过滤
       const matchesSearch = music.title.toLowerCase().includes(searchQuery.toLowerCase())
       // 类别过滤
-      const matchesCategory = selectedCategory === "all" || music.style === selectedCategory
+      const matchesCategory = selectedCategory === "all" || music.tags.split(",")[0] === selectedCategory
       return matchesSearch && matchesCategory
     })
     .sort((a, b) => {
       // 排序
       if (sortOrder === "newest") {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       } else if (sortOrder === "oldest") {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       } else {
         return a.title.localeCompare(b.title)
       }
@@ -53,7 +81,7 @@ export default function LibraryPage() {
             <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-              <h1 className="text-3xl font-bold mb-2">我的作品</h1>
+            <h1 className="text-3xl font-bold mb-2">我的作品</h1>
           </div>
           <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => router.push("/dashboard/create")}>
             <Plus className="mr-2 h-4 w-4" /> 创建新音乐
@@ -124,7 +152,7 @@ export default function LibraryPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Tabs defaultValue="grid" value={viewMode} onValueChange={(v) => setViewMode(v as "grid" | "list")}>
+          {/* <Tabs defaultValue="grid" value={viewMode} onValueChange={(v) => setViewMode(v as "grid" | "list")}>
             <TabsList className="bg-gray-100">
               <TabsTrigger value="grid" className="data-[state=active]:bg-white">
                 <Grid className="h-4 w-4" />
@@ -133,21 +161,36 @@ export default function LibraryPage() {
                 <List className="h-4 w-4" />
               </TabsTrigger>
             </TabsList>
-          </Tabs>
+          </Tabs> */}
         </div>
 
+        {/* 加载状态 */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          </div>
+        )}
+
+        {/* 错误提示 */}
+        {error && (
+          <div className="border border-red-200 bg-red-50 text-red-600 rounded-lg p-4 text-center">
+            {error}
+          </div>
+        )}
+
         {/* 音乐列表 */}
-        {filteredMusic.length > 0 ? (
+        {!isLoading && !error && filteredMusic.length > 0 ? (
           <div className={viewMode === "grid" ? "grid gap-6 md:grid-cols-2 lg:grid-cols-3" : "space-y-4"}>
             {filteredMusic.map((music) =>
-              viewMode === "grid" ? (
-                <MusicCard key={music.id} music={music} />
-              ) : (
-                <MusicListItem key={music.id} music={music} />
-              ),
+              <MusicCard key={music.clip_id} music={music} />
+              // viewMode === "grid" ? (
+              //   <MusicCard key={music.clip_id} music={music} />
+              // ) : (
+              //   <MusicListItem key={music.clip_id} music={music} />
+              // ),
             )}
           </div>
-        ) : (
+        ) : !isLoading && !error ? (
           <div className="border rounded-lg p-8 text-center">
             <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
               <Music className="h-8 w-8 text-gray-400" />
@@ -158,32 +201,11 @@ export default function LibraryPage() {
                 ? "没有找到匹配的音乐作品，请尝试不同的搜索条件。"
                 : "开始使用AI音乐创作家创作您的第一首音乐作品吧！"}
             </p>
-            <Button className="bg-purple-600 hover:bg-purple-700">创建第一首音乐</Button>
+            <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => router.push("/dashboard/create")}>
+              创建第一首音乐
+            </Button>
           </div>
-        )}
-
-        {/* 分页 - 实际应用中可能需要 */}
-        {filteredMusic.length > 0 && (
-          <div className="flex justify-center mt-8">
-            <nav aria-label="页面导航" className="flex gap-1">
-              <Button variant="outline" size="icon" disabled>
-                &lt;
-              </Button>
-              <Button variant="outline" size="icon" className="bg-purple-600 text-white hover:bg-purple-700">
-                1
-              </Button>
-              <Button variant="outline" size="icon">
-                2
-              </Button>
-              <Button variant="outline" size="icon">
-                3
-              </Button>
-              <Button variant="outline" size="icon">
-                &gt;
-              </Button>
-            </nav>
-          </div>
-        )}
+        ) : null}
       </main>
     </div>
   )
