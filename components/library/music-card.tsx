@@ -117,8 +117,12 @@ export default function MusicCard({ music, onDelete, onPlay, isPlaying = false }
       <CardContent className="p-4">
         <div className="flex items-center gap-4 mb-4">
           <div className="h-12 w-12 flex-shrink-0 bg-purple-100 rounded-md flex items-center justify-center">
-            {/* <Music className="h-6 w-6 text-purple-600" aria-label="音乐" /> */}
-            <img src={music.image_url} alt={music.title} className="w-full h-full object-cover rounded-md" />
+            {/* 如果图片为空，则显示音乐图标 */}
+            {music.image_url ? (
+              <img src={music.image_url} alt={music.title} className="w-full h-full object-cover rounded-md" />
+            ) : (
+              <Music className="h-6 w-6 text-purple-600" aria-label="音乐" />
+            )}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
