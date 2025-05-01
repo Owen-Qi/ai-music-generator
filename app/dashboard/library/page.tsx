@@ -13,6 +13,7 @@ import MusicListItem from "@/components/library/music-list-item"
 import { ArrowUpDown, Grid, List, Plus, Search, SlidersHorizontal, Music, ArrowLeft } from "lucide-react"
 import { getMusicList } from "@/lib/api"
 import type { MusicItem } from "@/lib/api"
+import AudioPlayer from "@/components/player/audio-player"
 
 export default function LibraryPage() {
   const router = useRouter()
@@ -24,6 +25,8 @@ export default function LibraryPage() {
   const [musicList, setMusicList] = useState<MusicItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentMusic, setCurrentMusic] = useState<MusicItem | null>(null)
+  const [playingMusicId, setPlayingMusicId] = useState<string | null>(null)
 
   // 获取音乐列表
   const fetchMusicList = async () => {
@@ -182,12 +185,16 @@ export default function LibraryPage() {
         {!isLoading && !error && filteredMusic.length > 0 ? (
           <div className={viewMode === "grid" ? "grid gap-6 md:grid-cols-2 lg:grid-cols-3" : "space-y-4"}>
             {filteredMusic.map((music) =>
-              <MusicCard key={music.clip_id} music={music} />
-              // viewMode === "grid" ? (
-              //   <MusicCard key={music.clip_id} music={music} />
-              // ) : (
-              //   <MusicListItem key={music.clip_id} music={music} />
-              // ),
+              <MusicCard 
+                key={music.clip_id} 
+                music={music} 
+                onDelete={fetchMusicList} 
+                onPlay={() => {
+                  setCurrentMusic(music)
+                  setPlayingMusicId(music.clip_id)
+                }}
+                isPlaying={playingMusicId === music.clip_id}
+              />
             )}
           </div>
         ) : !isLoading && !error ? (
@@ -207,6 +214,15 @@ export default function LibraryPage() {
           </div>
         ) : null}
       </main>
+      {currentMusic && (
+        <AudioPlayer 
+          currentMusic={currentMusic} 
+          onClose={() => {
+            setCurrentMusic(null)
+            setPlayingMusicId(null)
+          }} 
+        />
+      )}
     </div>
   )
 }

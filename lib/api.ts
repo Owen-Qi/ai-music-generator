@@ -247,3 +247,13 @@ export async function getMusicList(): Promise<MusicListResponse> {
   const data: MusicListResponse = await response.json()
   return data
 }
+
+
+// 删除音乐的接口
+export async function deleteMusic(clip_id: string): Promise<ApiResponse<null>> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/music/${clip_id}/`, {
+    method: 'DELETE',
+  })
+  const data: ApiResponse<null> = await response.json()
+  return data
+}

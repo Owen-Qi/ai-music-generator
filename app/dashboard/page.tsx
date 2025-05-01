@@ -5,9 +5,46 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import DashboardHeader from "@/components/layout/dashboard-header"
 import { MusicIcon } from "lucide-react"
+import MusicCard from "@/components/library/music-card"
+import { getMusicList } from "@/lib/api"
+import type { MusicItem } from "@/lib/api"
+import AudioPlayer from "@/components/player/audio-player"
+import { useState, useEffect } from "react"
 
 export default function DashboardPage() {
   const router = useRouter()
+  const [recentMusic, setRecentMusic] = useState<MusicItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [currentMusic, setCurrentMusic] = useState<MusicItem | null>(null)
+  const [playingMusicId, setPlayingMusicId] = useState<string | null>(null)
+
+  // 获取最近音乐列表
+  const fetchRecentMusic = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const response = await getMusicList()
+      if (response.results) {
+        // 按创建时间排序并只取前3首
+        const sortedMusic = response.results.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ).slice(0, 3)
+        setRecentMusic(sortedMusic)
+      } else {
+        setError("获取音乐列表失败")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "获取音乐列表失败")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 初始加载
+  useEffect(() => {
+    fetchRecentMusic()
+  }, [])
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -60,17 +97,55 @@ export default function DashboardPage() {
 
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-6">最近创作</h2>
-          {/* 如果没有作品 */}
-          <div className="border rounded-lg p-8 text-center">
-            <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <MusicOffIcon className="h-8 w-8 text-gray-400" />
+          {/* 错误提示 */}
+          {error && (
+            <div className="border border-red-200 bg-red-50 text-red-600 rounded-lg p-4 text-center">
+              {error}
             </div>
-            <h3 className="text-lg font-medium mb-2">还没有创作作品</h3>
-            <p className="text-gray-500 mb-4 max-w-md mx-auto">开始使用AI音乐创作家创作您的第一首音乐作品吧！</p>
-            <Button className="bg-purple-600 hover:bg-purple-700">创建第一首音乐</Button>
-          </div>
+          )}
+
+          {/* 音乐列表 */}
+          {!isLoading && !error && recentMusic.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {recentMusic.map((music) => (
+                <MusicCard 
+                  key={music.clip_id} 
+                  music={music} 
+                  onDelete={fetchRecentMusic} 
+                  onPlay={() => {
+                    setCurrentMusic(music)
+                    setPlayingMusicId(music.clip_id)
+                  }}
+                  isPlaying={playingMusicId === music.clip_id}
+                />
+              ))}
+            </div>
+          ) : !isLoading && !error ? (
+            <div className="border rounded-lg p-8 text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <MusicOffIcon className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">还没有创作作品</h3>
+              <p className="text-gray-500 mb-4 max-w-md mx-auto">开始使用AI音乐创作家创作您的第一首音乐作品吧！</p>
+              <Button 
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={() => router.push("/dashboard/create")}
+              >
+                创建第一首音乐
+              </Button>
+            </div>
+          ) : null}
         </div>
       </main>
+      {currentMusic && (
+        <AudioPlayer 
+          currentMusic={currentMusic} 
+          onClose={() => {
+            setCurrentMusic(null)
+            setPlayingMusicId(null)
+          }} 
+        />
+      )}
       <footer className="border-t py-6">
         <div className="container flex justify-between items-center">
           <p className="text-sm text-gray-500">© 2025 AI音乐创作家. 保留所有权利.</p>
