@@ -42,6 +42,7 @@ interface MusicCardProps {
 export default function MusicCard({ music, onDelete, onPlay, isPlaying = false }: MusicCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -108,7 +109,28 @@ export default function MusicCard({ music, onDelete, onPlay, isPlaying = false }
         console.error('下载失败:', err)
       })
   }
-  
+
+  const handleDownloadMusicXML = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (music.sheet_url) {
+      const url = music.sheet_url.replace('.pdf', '.musicxml')
+      window.open(url, '_blank')
+    }
+  }
+
+  const handleDownloadPDF = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (music.sheet_pdf_url) {
+      window.open(music.sheet_pdf_url, '_blank')
+    }
+  }
+
+  useEffect(() => {
+    if (music.sheet_url && isDialogOpen) {
+      setPdfUrl(music.sheet_url)
+    }
+  }, [music.sheet_url, isDialogOpen])
+
   return (
     <Card 
       className="overflow-hidden transition-all hover:shadow-md cursor-pointer" 
@@ -318,17 +340,25 @@ export default function MusicCard({ music, onDelete, onPlay, isPlaying = false }
               <div className="mt-4 space-y-4">
                 {music.has_sheet ? (
                   <>
-                    <div className="border rounded-md p-4 flex items-center justify-center bg-gray-50 h-60">
-                      <FileText className="h-16 w-16 text-gray-400" />
+                    <div className="border rounded-md p-4 flex items-center justify-center bg-gray-50 h-[600px]">
+                      {music.sheet_pdf_url ? (
+                        <iframe
+                          src={`${music.sheet_pdf_url}#toolbar=0`}
+                          className="w-full h-full"
+                          title="曲谱预览"
+                        />
+                      ) : (
+                        <FileText className="h-16 w-16 text-gray-400" />
+                      )}
                     </div>
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline">
+                      <Button variant="outline" onClick={handleDownloadMusicXML}>
                         <FileText className="h-4 w-4 mr-2" />
-                        在线查看
+                        下载曲谱(MusicXML)
                       </Button>
-                      <Button className="bg-purple-600 hover:bg-purple-700">
+                      <Button className="bg-purple-600 hover:bg-purple-700" onClick={handleDownloadPDF}>
                         <Download className="h-4 w-4 mr-2" />
-                        下载曲谱
+                        下载曲谱(PDF)
                       </Button>
                     </div>
                   </>
