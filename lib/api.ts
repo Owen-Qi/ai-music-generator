@@ -200,6 +200,32 @@ export async function submitMusic(requestData: SubmitMusicRequest): Promise<ApiR
   }
 }
 
+interface SubmitLyricsRequest {
+  prompt: string
+}
+
+interface SubmitLyricsResponse {
+  code: number
+  msg: string
+  data: {
+    text: string
+    title: string
+    status: string
+    errorMessage: string
+  }
+  exec_time: number
+  ip: string
+}
+
+export async function submitLyrics(requestData: SubmitLyricsRequest): Promise<SubmitLyricsResponse> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/music/lyrics/`, {
+    method: 'POST',
+    body: JSON.stringify(requestData),
+  })
+  const data: SubmitLyricsResponse = await response.json()
+  return data
+}
+
 export interface MusicListResponse {
   count: number
   next: string | null

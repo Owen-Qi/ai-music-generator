@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Sparkles } from "lucide-react"
-import { submitMusic } from "@/lib/api"
+import { submitMusic, submitLyrics } from "@/lib/api"
 import { toast } from "sonner"
 export default function CreatePage() {
   const router = useRouter()
@@ -71,20 +71,9 @@ export default function CreatePage() {
 
     setAiGeneratingLyrics(true)
     try {
-      const response = await fetch("/api/submit/lyrics/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ prompt }),
-      })
-
-      if (!response.ok) {
-        throw new Error("生成歌词失败")
-      }
-
-      const data = await response.json()
-      setPrompt(data.lyrics)
+      const response = await submitLyrics({ prompt })
+      setPrompt(response.data.text)
+      setSongTitle(response.data.title)
     } catch (error) {
       console.error("生成歌词失败:", error)
     } finally {

@@ -26,6 +26,8 @@ import {
   MoreVertical,
   FileMusic,
   Headphones,
+  Loader2,
+  XCircle,
 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import type { MusicItem } from "@/lib/api"
@@ -113,7 +115,7 @@ export default function MusicCard({ music, onDelete, onPlay, isPlaying = false }
   const handleDownloadMusicXML = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (music.sheet_url) {
-      const url = music.sheet_url.replace('.pdf', '.musicxml')
+      const url = music.sheet_url
       window.open(url, '_blank')
     }
   }
@@ -139,16 +141,19 @@ export default function MusicCard({ music, onDelete, onPlay, isPlaying = false }
       <CardContent className="p-4">
         <div className="flex items-center gap-4 mb-4">
           <div className="h-12 w-12 flex-shrink-0 bg-purple-100 rounded-md flex items-center justify-center">
-            {/* 如果图片为空，则显示音乐图标 */}
-            {music.image_url ? (
+            {/* 如果 state 为 pending 则展示加载中，如果为 succeeded 则展示图片，如果为 error 则展示错误图标 */}
+            {music.state === 'pending' ? (
+              <Loader2 className="h-6 w-6 text-purple-600 animate-spin" aria-label="加载中" />
+            ) : music.state === 'succeeded' ? (
               <img src={music.image_url} alt={music.title} className="w-full h-full object-cover rounded-md" />
             ) : (
-              <Music className="h-6 w-6 text-purple-600" aria-label="音乐" />
+              <XCircle className="h-6 w-6 text-red-600" aria-label="错误" />
             )}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-lg truncate">{music.title}</h3>
+              {/* 显示的文字限制为7个字，如果超过7个字则显示省略号 */}
+              <h4 className="font-semibold text-lg truncate max-w-[100px]">{music.title}</h4>
               {music.has_sheet && <FileMusic className="h-4 w-4 text-purple-600" aria-label="包含曲谱" />}
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
